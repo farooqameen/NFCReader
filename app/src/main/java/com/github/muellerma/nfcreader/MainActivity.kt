@@ -26,7 +26,7 @@ import java.io.File
 import java.io.FileOutputStream
 import java.io.IOException
 import java.text.SimpleDateFormat
-import java.util.*
+import java.util.Date
 
 class MainActivity : AppCompatActivity() {
     private var tagList: LinearLayout? = null
@@ -97,6 +97,7 @@ class MainActivity : AppCompatActivity() {
         if (intent.action in validActions) {
             // TODO
             val rawMsgs = intent.getParcelableArrayExtra(NfcAdapter.EXTRA_NDEF_MESSAGES)
+            Log.d("rawMsgs", rawMsgs.toString())
             val messages = mutableListOf<NdefMessage>()
             if (rawMsgs != null) {
                 rawMsgs.forEach {
@@ -109,23 +110,26 @@ class MainActivity : AppCompatActivity() {
                 val tag = intent.parcelable<Tag>(NfcAdapter.EXTRA_TAG) ?: return
                 val payload = dumpTagData(tag).toByteArray()
                 val record = NdefRecord(NdefRecord.TNF_UNKNOWN, empty, id, payload)
+                //FarooqList.add(record.id)
                 val msg = NdefMessage(arrayOf(record))
+
                 messages.add(msg)
             }
             // Setup the views
+
             buildTagViews(messages)
         }
     }
 
     private fun dumpTagData(tag: Tag): String {
         val sb = StringBuilder()
+        val csv = StringBuilder()
         val id = tag.id
+        Log.d("tag.id", toHex(tag.id))
         sb.append("ID (hex): ").append(toHex(id)).append('\n')
         sb.append("ID (reversed hex): ").append(toReversedHex(id)).append('\n')
         sb.append("ID (dec): ").append(toDec(id)).append('\n')
         sb.append("ID (reversed dec): ").append(toReversedDec(id)).append('\n')
-
-        val csv = StringBuilder()
 
         csv.append(toHex(id)).append(',')
         csv.append(toReversedHex(id)).append(',')
@@ -139,6 +143,7 @@ class MainActivity : AppCompatActivity() {
 
         Log.d("saveCSV", saveCSV.toString())
 
+        Log.d("sb", sb.toString())
         val prefix = "android.nfc.tech."
         sb.append("Technologies: ")
         for (tech in tag.techList) {
@@ -214,6 +219,7 @@ class MainActivity : AppCompatActivity() {
             false  // Return false if failed
         }
     }
+
 
     private fun toHex(bytes: ByteArray): String {
         val sb = StringBuilder()
