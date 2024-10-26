@@ -10,7 +10,9 @@ import android.nfc.tech.MifareClassic
 import android.nfc.tech.MifareUltralight
 import android.os.Build
 import android.os.Bundle
+import android.os.Environment
 import android.provider.Settings
+import android.util.Log
 import android.view.LayoutInflater
 import android.view.Menu
 import android.view.MenuItem
@@ -20,6 +22,9 @@ import android.widget.TextView
 import androidx.appcompat.app.AppCompatActivity
 import com.github.muellerma.nfcreader.record.ParsedNdefRecord
 import com.google.android.material.dialog.MaterialAlertDialogBuilder
+import java.io.File
+import java.io.FileOutputStream
+import java.io.IOException
 import java.text.SimpleDateFormat
 import java.util.*
 
@@ -119,6 +124,21 @@ class MainActivity : AppCompatActivity() {
         sb.append("ID (reversed hex): ").append(toReversedHex(id)).append('\n')
         sb.append("ID (dec): ").append(toDec(id)).append('\n')
         sb.append("ID (reversed dec): ").append(toReversedDec(id)).append('\n')
+
+        val csv = StringBuilder()
+
+        csv.append(toHex(id)).append(',')
+        csv.append(toReversedHex(id)).append(',')
+        csv.append(toDec(id)).append(',')
+        csv.append(toReversedDec(id)).append('\n')
+
+        Log.d("csv", csv.toString())
+
+        //save to csv
+        val saveCSV = saveCSV(csv)
+
+        Log.d("saveCSV", saveCSV.toString())
+
         val prefix = "android.nfc.tech."
         sb.append("Technologies: ")
         for (tech in tag.techList) {
@@ -159,6 +179,40 @@ class MainActivity : AppCompatActivity() {
             }
         }
         return sb.toString()
+    }
+
+    private fun saveCSV(data: StringBuilder): Boolean {
+        return try {
+            // Get the Downloads directory
+            val downloadsDir =
+                Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOWNLOADS)
+            val file = File(downloadsDir, "NFC.txt")
+            val fileExists = file.exists() && file.length() > 0
+            val headers = StringBuilder()
+
+            headers.append("hex,reversed hex,dec,reversed dec,").append('\n')
+
+            // Append mode - 'true' as the second parameter
+            FileOutputStream(file, true).use { fos ->
+                // Add a newline if the file already exists and doesn't end with one
+                if (!fileExists) {
+                    fos.write(headers.toString().toByteArray())
+                }
+                if (file.exists() && file.length() > 0) {
+                    val lastChar = file.readBytes().last().toChar()
+                    if (lastChar != '\n') {
+                        fos.write("\n".toByteArray())
+                    }
+                }
+
+                // Write the data
+                fos.write(data.toString().toByteArray())
+            }
+            true  // Return true if successful
+        } catch (e: IOException) {
+            e.printStackTrace()
+            false  // Return false if failed
+        }
     }
 
     private fun toHex(bytes: ByteArray): String {
